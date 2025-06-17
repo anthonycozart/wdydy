@@ -1,0 +1,8 @@
+openai>=1.0.0
+python-dotenv
+pydub
+anthropic>=0.54.0
+yt-dlp
+pandas>=2.0.0
+tiktoken>=0.5.0
+tenacity>=8.0.0

@@ -1,0 +1,52 @@
+"""
+Based on this podcast transcript, please answer the following questions about {guest_name}'s day yesterday:
+
+**Wake-up Time:**
+What time did {guest_name} wake up yesterday?
+
+**Bed Time:**
+What time did {guest_name} go to sleep in the evening yesterday?
+
+**Daily Schedule:**
+List {guest_name}'s activities from yesterday chronologically. For each event, provide:
+- Start Time: When it started
+- Part of Day: The general time period when the activity occurred (e.g., "morning", "afternoon", "evening", "night")
+- Duration: The length in minutes
+- Explicit Duration: True if the duration is explicitly referenced (e.g., "45 minutes", "an hour"), else False.
+- Event: One sentence describing what happened
+- Category: 1-3 word classification
+- Participants: Who was involved, including {guest_name}
+- Host Reaction: The host's reaction to that activity
+
+Format each activity as:
+Start Time: [time]
+Part of Day: [1-2 words]
+Duration: [minutes]
+Explicit Duration: [boolean]
+Event: [single sentence description]
+Category: [1-3 words]
+Participants: [names]
+Host Reaction: [1-3 words]
+
+**Output Format:**
+Return valid JSON with this exact structure:
+{{
+  "wake_time": "HH:MM" or null,
+  "bed_time": "HH:MM" or null,
+  "activities": [
+    {{
+      "time": "HH:MM" or null,
+      "part_of_day": "part",
+      "duration_minutes": number or null,
+      "explicit_duration": true|false,
+      "event": "description",
+      "category": "category",
+      "participants": ["name1", "name2"] or [],
+      "host_reaction": ["adjective1", "adjective2"] or null
+    }}
+  ]
+}}
+
+**Transcript:**
+{transcript}
+"""

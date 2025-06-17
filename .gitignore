@@ -1,0 +1,6 @@
+.env
+venv/
+venv312/
+**/data/
+**/output/
+**/__pycache__/
