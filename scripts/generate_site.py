@@ -311,15 +311,15 @@ def generate_html():
             <div class="links-grid">
                 <a href="https://podcasts.apple.com/us/podcast/what-did-you-do-yesterday-with-max-rushden-david-odoherty/id1765600990" class="link-item" target="_blank" rel="noopener noreferrer">
                     <strong>Apple Podcasts</strong>
-                    <small>"Because Everything is Show Business"</small>
+                    <small>Because "Everything is Show Business"</small>
                 </a>
                 <a href="https://github.com/anthonycozart/wdydy/tree/main" class="link-item" target="_blank" rel="noopener noreferrer">
                     <strong>Source Code</strong>
-                    <small>"Digital parts for 19 Bikes"</small>
+                    <small>Digital parts for 19 Bikes</small>
                 </a>
                 <a href="https://github.com/anthonycozart/wdydy/tree/main" class="link-item" target="_blank" rel="noopener noreferrer">
                     <strong>Project Notes</strong>
-                    <small>"The Story"</small>
+                    <small>Coming soon...</small>
                 </a>
             </div>
         </div>

@@ -131,7 +131,7 @@ def create_activities_dataframe(analysis_dir):
                 "event": activity.get("event"),
                 "category": activity.get("category"),
                 "participants": ", ".join(activity.get("participants", [])) if activity.get("participants") else None,
-                "host_reaction": activity.get("host_reaction")
+                "host_reaction": ", ".join(activity.get("host_reaction", [])) if activity.get("host_reaction") else None
             }
             all_activities.append(activity_data)
     
