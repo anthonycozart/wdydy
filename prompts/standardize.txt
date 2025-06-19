@@ -1,0 +1,44 @@
+You are standardizing activity categories from podcast transcript analysis. You have access to ALL activities that need categorization - use this context to create 8-10 high-level categories.
+
+**Your Task:**
+1. Review all activities below
+2. Map each activity to one of the Standard Categories below, following the Categorization Rules
+3. If patterns don't fit well, suggest 1-2 additional categories
+
+**Input Data:**
+Each activity contains: event description, original category, participant names.
+{all_activities_json}
+
+**Standard Categories** (choose from these):
+- Work: Professional activities, meetings, business tasks
+- Meals: Eating, cooking, food preparation
+- Exercise: Physical activity, sports, fitness
+- Transport: Driving, commuting, travel
+- Family: Time with family members, childcare
+- Social: Friends, social events, entertainment
+- Personal Care: Hygiene, medical, self-care
+- Household: Chores, maintenance, errands
+- Rest: Sleep, relaxation, downtime
+
+**Categorization Rules:**
+- Use the Event description as primary context, Category as secondary
+- Map to the most specific applicable standard category
+- When unsure between categories, prioritize the main purpose of the activity
+- Ignore capitalization and minor wording variations
+
+**Output Format:**
+Return valid JSON with this exact structure:
+{{
+  "categories_used": ["Work", "Meals", "Transport", ...],
+  "suggested_additions": [
+    {{"category": "new category name", "reason": "why it's needed"}}
+  ],
+  "mappings": [
+    {{
+      "original_event": "event description",
+      "original_category": "original category", 
+      "standardized_category": "Standard Category Name",
+      "reasoning": "Brief explanation"
+    }}
+  ]
+}}

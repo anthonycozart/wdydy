@@ -1,0 +1,21 @@
+You are standardizing activity categories from podcast transcript analysis. 
+
+**Your Task:**
+1. Group these {num_categories} activity categories into {num_clusters}-{num_clusters_max} semantic clusters.
+2. Create meaningful standard category names that best represent each cluster.
+
+**Input Data:**
+Categories to cluster:
+{categories_json}
+
+**Output Format:**
+Return valid JSON with this exact structure:
+{{
+  "clusters": [
+    {{
+      "standard_name": "Standard Category Name",
+      "description": "Brief description of what this category covers",
+      "original_categories": ["original cat 1", "original cat 2", ...]
+    }}
+  ]
+}} 

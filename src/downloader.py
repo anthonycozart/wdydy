@@ -17,11 +17,31 @@ class PodcastDownloader:
         self.audio_dir.mkdir(parents=True, exist_ok=True)
     
     def _load_download_log(self):
-        """Load the log of previously downloaded episodes"""
+        """Load the log of previously downloaded episodes and sync with actual files"""
+        downloaded_from_log = set()
         if self.download_log_file.exists():
             with open(self.download_log_file, 'r') as f:
-                return set(json.load(f).get('downloaded_episodes', []))
-        return set()
+                downloaded_from_log = set(json.load(f).get('downloaded_episodes', []))
+        
+        # Also check actual files in the directory
+        downloaded_from_files = set()
+        if self.audio_dir.exists():
+            for file_path in self.audio_dir.glob("*.mp3"):
+                # Extract episode name from filename (remove .mp3 extension)
+                episode_name = file_path.stem
+                # Normalize the title to match the format from RSS feed
+                normalized_name = self._normalize_title(episode_name)
+                downloaded_from_files.add(normalized_name)
+        
+        # Combine both sets and update the log if there are differences
+        all_downloaded = downloaded_from_log | downloaded_from_files
+        if all_downloaded != downloaded_from_log:
+            # Update the log file with the actual state
+            self.downloaded_episodes = all_downloaded
+            self._save_download_log()
+            return all_downloaded
+        
+        return downloaded_from_log
     
     def _save_download_log(self):
         """Save the log of downloaded episodes"""

@@ -25,6 +25,7 @@ wheels/
 # Project specific
 **/data/
 **/output/
+**/suggestions/
 
 # IDEs and editors
 .idea/

@@ -1,0 +1,10 @@
+[
+    "Podcasts. There are millions of them. Some might say too many. I have one already. I don't have any because there are enough.",
+    "Politics, business, sport, you name it, there's a podcast about it. They all ask the big questions and cover the hot topics of the day.",
+    "But nobody is covering the most important topic of all.",
+    "Why is that? Are they scared? Too afraid of being censored by the man? Possibly, but not us.",
+    "We're here to ask the only question that matters. We try and say it at the same time, Max.",
+    "That's it. All we're interested in is what the guests got up to yesterday. Nothing more.",
+    "Day before yesterday, Max? Nope.",
+    "The greatest and most interesting day of your life? Unless it was yesterday, we don't want to know about it."
+]
