@@ -26,6 +26,7 @@ wheels/
 **/data/
 **/output/
 **/suggestions/
+*.png
 
 # IDEs and editors
 .idea/
