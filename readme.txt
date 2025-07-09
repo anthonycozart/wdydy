@@ -30,6 +30,6 @@ Deploy via GitHub Pages using the `/docs` folder.
 
 ## Live Site
 
-View the interactive dashboard and project reflections at: [GitHub Pages URL]
+View the interactive dashboard and project reflections at https://anthonycozart.github.io/wdydy/
 
 Built with Python, Chart.js, and AI-assisted development using Cursor and Claude.

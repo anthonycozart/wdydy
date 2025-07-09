@@ -102,7 +102,7 @@ class CategoryStandardizer:
             return sorted(list(categories))
     
     @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=4, max=10))
-    def cluster_categories(self, unique_categories, num_clusters=8, min_categories_per_cluster=3):
+    def cluster_categories(self, unique_categories, num_clusters=8, min_categories_per_cluster=3, existing_standard_categories=None):
         """Cluster category names only - much more token efficient"""
         if not self.anthropic_client:
             raise ValueError("Anthropic client required for hierarchical categorization")
@@ -125,6 +125,13 @@ class CategoryStandardizer:
         # Add minimum cluster size constraint to the prompt
         min_cluster_instruction = f"\n\nIMPORTANT CONSTRAINT: Each cluster must contain at least {min_categories_per_cluster} original categories. If a cluster would have fewer than {min_categories_per_cluster} categories, merge it with the most similar cluster or redistribute its categories to other clusters. Ensure no cluster has fewer than {min_categories_per_cluster} original categories."
         prompt += min_cluster_instruction
+        
+        # Add existing standard categories constraint if available
+        if existing_standard_categories:
+            print(f"Using {len(existing_standard_categories)} existing standard categories as constraints")
+            existing_categories_text = ", ".join(existing_standard_categories)
+            existing_constraint_text = f"\n\nIMPORTANT: You must use these existing standard category names whenever possible: {existing_categories_text}\n\nOnly create new standard category names if none of the existing ones are appropriate. Prioritize using existing category names to maintain consistency across runs."
+            prompt += existing_constraint_text
         
         # Count tokens and wait if necessary
         prompt_tokens = self._count_tokens(prompt)
@@ -197,7 +204,7 @@ class CategoryStandardizer:
                 standardized_activities.append(new_activity)
             return standardized_activities
     
-    def standardize_all_categories_hierarchical(self, all_activities, num_clusters=8, min_categories_per_cluster=3):
+    def standardize_all_categories_hierarchical(self, all_activities, num_clusters=8, min_categories_per_cluster=3, existing_standard_categories=None):
         """Main method to standardize categories hierarchically"""
         print(f"Starting hierarchical categorization approach...")
         
@@ -206,7 +213,7 @@ class CategoryStandardizer:
         print(f"Found {len(unique_categories)} unique categories")
         
         # Step 2: Cluster categories (single API call, small tokens)
-        clusters = self.cluster_categories(unique_categories, num_clusters, min_categories_per_cluster)
+        clusters = self.cluster_categories(unique_categories, num_clusters, min_categories_per_cluster, existing_standard_categories)
         print(f"Created {len(clusters.get('clusters', []))} standard categories")
         
         # Print cluster summary
@@ -218,7 +225,7 @@ class CategoryStandardizer:
         
         return standardized_activities, clusters
     
-    def create_standardization_prompt(self, df):
+    def create_standardization_prompt(self, df, existing_standard_categories=None):
         """Create a prompt for category standardization using sampled activities."""
         # Get unique categories
         unique_categories = df['category'].unique()
@@ -252,6 +259,14 @@ class CategoryStandardizer:
         # Create the prompt using simple string replacement
         try:
             prompt = self.categorization_prompt.replace("{all_activities_json}", activities_json)
+            
+            # Add existing standard categories constraint if available
+            if existing_standard_categories:
+                print(f"Using {len(existing_standard_categories)} existing standard categories as constraints")
+                existing_categories_text = ", ".join(existing_standard_categories)
+                constraint_text = f"\n\nIMPORTANT: You must use these existing standard categories whenever possible: {existing_categories_text}\n\nOnly create new standard categories if none of the existing ones are appropriate. Prioritize mapping to existing categories to maintain consistency across runs."
+                prompt += constraint_text
+            
             print(f"Prompt creation successful")
         except Exception as e:
             print(f"Unexpected error during prompt creation: {type(e).__name__}: {e}")
@@ -325,9 +340,22 @@ class CategoryStandardizer:
             traceback.print_exc()
             raise
     
-    def get_category_mapping(self, df, provider="auto", model=None):
+    def extract_standard_categories_from_mapping(self, mapping_data):
+        """Extract standard categories from existing mapping data."""
+        if isinstance(mapping_data, dict):
+            if 'mapping' in mapping_data:
+                # Hierarchical format
+                mapping = mapping_data['mapping']
+                return list(set(mapping.values()))
+            else:
+                # Simple mapping format
+                return list(set(mapping_data.values()))
+        else:
+            return []
+
+    def get_category_mapping(self, df, provider="auto", model=None, existing_standard_categories=None):
         """Get category mapping using the specified LLM provider."""
-        prompt = self.create_standardization_prompt(df)
+        prompt = self.create_standardization_prompt(df, existing_standard_categories)
         
         # Auto-detect provider if not specified
         if provider == "auto":
@@ -458,6 +486,17 @@ class CategoryStandardizer:
         categories = self.get_unique_categories(df)
         print(f"Found {len(categories)} unique categories")
         
+        # Check for existing mapping to extract standard categories
+        existing_standard_categories = None
+        existing_mapping = None
+        if mapping_path.exists():
+            print(f"Found existing mapping file: {mapping_path}")
+            with open(mapping_path, 'r', encoding='utf-8') as f:
+                existing_mapping_data = json.load(f)
+                existing_mapping = existing_mapping_data.get('mapping', {})
+                existing_standard_categories = self.extract_standard_categories_from_mapping(existing_mapping_data)
+                print(f"Extracted {len(existing_standard_categories)} existing standard categories: {existing_standard_categories}")
+        
         # Get or load category mapping
         if use_existing and mapping_path.exists():
             print(f"Loading existing hierarchical mapping from {mapping_path}")
@@ -465,26 +504,34 @@ class CategoryStandardizer:
                 mapping_data = json.load(f)
                 mapping = mapping_data.get('mapping', {})
                 clusters_info = mapping_data.get('clusters_info', {})
+                
+            # Apply mapping to dataframe
+            print("Applying loaded hierarchical category mapping...")
+            standardized_df = self.apply_mapping_to_dataframe(df, mapping)
         else:
             print("Generating new hierarchical category mapping...")
-            # Use hierarchical approach
-            standardized_df, clusters_data = self.standardize_all_categories_hierarchical(df, num_clusters, min_categories_per_cluster)
-            mapping = self.hierarchical_mapping
+            # Use hierarchical approach with existing standard categories constraint
+            standardized_df, clusters_data = self.standardize_all_categories_hierarchical(
+                df, num_clusters, min_categories_per_cluster, existing_standard_categories
+            )
+            new_mapping = self.hierarchical_mapping
+            
+            # Merge with existing mapping to preserve stability
+            mapping = self.merge_with_existing_mapping(new_mapping, existing_mapping)
             
             # Save both mapping and cluster information
             mapping_data = {
                 'mapping': mapping,
                 'clusters_info': clusters_data,
                 'approach': 'hierarchical',
-                'num_clusters': num_clusters
+                'num_clusters': num_clusters,
+                'existing_standard_categories_used': existing_standard_categories is not None
             }
             with open(mapping_path, 'w', encoding='utf-8') as f:
                 json.dump(mapping_data, f, indent=2, ensure_ascii=False)
             print(f"Hierarchical category mapping saved to: {mapping_path}")
-        
-        # Apply mapping to dataframe if we loaded existing mapping
-        if use_existing and mapping_path.exists():
-            print("Applying loaded hierarchical category mapping...")
+            
+            # Re-apply the merged mapping to the dataframe
             standardized_df = self.apply_mapping_to_dataframe(df, mapping)
         
         # Show results
@@ -535,13 +582,27 @@ class CategoryStandardizer:
             categories = self.get_unique_categories(df)
             print(f"Found {len(categories)} unique categories")
             
+            # Check for existing mapping to extract standard categories
+            existing_standard_categories = None
+            existing_mapping = None
+            if mapping_path.exists():
+                print(f"Found existing mapping file: {mapping_path}")
+                existing_mapping = self.load_mapping(mapping_path)
+                existing_standard_categories = self.extract_standard_categories_from_mapping(existing_mapping)
+                print(f"Extracted {len(existing_standard_categories)} existing standard categories: {existing_standard_categories}")
+            
             # Get or load category mapping
             if use_existing and mapping_path.exists():
                 print(f"Loading existing mapping from {mapping_path}")
-                mapping = self.load_mapping(mapping_path)
+                mapping = existing_mapping
             else:
                 print("Generating new category mapping...")
-                mapping = self.get_category_mapping(df, provider, model)
+                # Use existing standard categories as constraint
+                new_mapping = self.get_category_mapping(df, provider, model, existing_standard_categories)
+                
+                # Merge with existing mapping to preserve stability
+                mapping = self.merge_with_existing_mapping(new_mapping, existing_mapping)
+                
                 self.save_mapping(mapping, mapping_path)
             
             # Apply mapping to dataframe
@@ -566,3 +627,19 @@ class CategoryStandardizer:
                 print(f"\nStandardized data saved to: {output_path}")
             
             return standardized_df, mapping 
+
+    def merge_with_existing_mapping(self, new_mapping, existing_mapping):
+        """Merge new mapping with existing mapping, preserving existing mappings."""
+        if not existing_mapping:
+            return new_mapping
+            
+        # Start with existing mapping
+        merged_mapping = existing_mapping.copy()
+        
+        # Add new mappings only for categories not already mapped
+        for original_category, standard_category in new_mapping.items():
+            if original_category not in merged_mapping:
+                merged_mapping[original_category] = standard_category
+                print(f"Added new category mapping: {original_category} -> {standard_category}")
+        
+        return merged_mapping 
